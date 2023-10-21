@@ -57,6 +57,7 @@ export class CollectionFilter {
 
         const selectedFields = this.params.fields.split(',');
 
+
         this.data = this.data.map(item => {
             const selectedItem = {};
             selectedFields.forEach(field => {

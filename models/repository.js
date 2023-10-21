@@ -145,7 +145,7 @@ export default class Repository {
         if (objectsList)
             for (let data of objectsList) {
                 bindedDatas.push(this.model.bindExtraData(data));
-            };
+            }
         return bindedDatas;
     }
     get(id) {
