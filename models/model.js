@@ -18,7 +18,7 @@ export default class Model {
     isMember(propertyName){
         let exist = false;
         this.fields.forEach(field => {
-            if (field.name == propertyName)
+            if (field.name === propertyName)
                 exist = true;
         })
         return exist;
@@ -29,9 +29,10 @@ export default class Model {
                 return field;
             }
         }
-        return null;
+        return null; // Return null if the field is not found
     }
-    
+
+
     setKey(key) {
         this.key = key;
     }

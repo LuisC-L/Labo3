@@ -1,98 +1,107 @@
-// collectionFilter.js
-
-export class CollectionFilter {
+class CollectionFilter {
     constructor(data, params, model) {
         this.data = data;
         this.params = params;
         this.model = model;
     }
 
-    filterData() {
-        if (!this.params) return;
-    
-        for (let param in this.params) {
-            let field = this.model.getFieldByName(param);
-            if (field) {
-                let filterValue = this.params[param];
-                let fieldName = field.name;
-    
-                switch (field.type) {
-                    case 'string':
-                        this.data = this.data.filter(item => this.valueMatch(item[fieldName], filterValue));
-                        break;
-                    case 'url':
-                        this.data = this.data.filter(item => item[fieldName] === filterValue);
-                        break;
-                    default:
-                        break;
-                }
+    get() {
+        if (!this.params) {
+            return this.data;
+        }
+
+        let filteredData = [...this.data];
+
+        let fieldInfo;
+
+        if (this.params.sort) {
+            let sortParams = this.params.sort.split(',');
+            let sortField = sortParams[0];
+            let sortOrder = sortParams[1];
+            fieldInfo = this.getFieldInfo(sortField);
+            if(sortField === "Category")
+                sortOrder = "desc";
+            if (fieldInfo)
+                filteredData = this.sortData(filteredData, fieldInfo, sortOrder);
+        }
+
+        if (this.params.fields) {
+            const fieldsToInclude = this.params.fields.split(',');
+            filteredData = this.filterFields(filteredData, fieldsToInclude);
+        }
+        if (this.params.field) {
+            const fieldsToInclude = this.params.field.split(',');
+
+            filteredData = this.filterFields(filteredData, fieldsToInclude);
+
+            const distinctFields = this.params.field.split(',');
+            filteredData = this.filterDistinctFields(filteredData, distinctFields);
+        }
+
+        if (this.params) {
+            for (const filter in this.params) {
+                const fieldInfo = this.getFieldInfo(filter);
+
+                if (fieldInfo)
+                    filteredData = this.filterByField(filteredData, fieldInfo, this.params[filter]);
             }
         }
-    }
-    
+        // Apply pagination (limit and offset)
+        if (this.params.limit && this.params.offset) {
+            const limit = parseInt(this.params.limit);
+            const offset = parseInt(this.params.offset);
+            filteredData = filteredData.slice(offset, offset + limit);
+        }
 
-    sortData() {
-        if (!this.params || !this.params.sort) return;
-    
-        let sortParams = this.params.sort.split(',');
-        let fieldName = sortParams[0];
-        let sortOrder = sortParams[1] === 'desc' ? -1 : 1;
-    
-        this.data.sort((a, b) => this.compareNum(a[fieldName], b[fieldName]) * sortOrder);
-    }
-    
-
-    limitData() {
-        if (!this.params || !this.params.limit) return;
-
-        let limit = parseInt(this.params.limit);
-        let offset = this.params.offset ? parseInt(this.params.offset) : 0;
-
-        this.data = this.data.slice(offset, offset + limit);
+        return filteredData;
     }
 
-
-    selectFields() {
-        if (!this.params || !this.params.fields) return;
-
-        const selectedFields = this.params.fields.split(',');
-
-
-        this.data = this.data.map(item => {
-            const selectedItem = {};
-            selectedFields.forEach(field => {
-                selectedItem[field] = item[field];
+    filterFields(data, fieldsToInclude) {
+        return data.map(item => {
+            const newRenderField = {};
+            fieldsToInclude.forEach(fieldName => {
+                if (item[fieldName] !== undefined) {
+                    newRenderField[fieldName] = item[fieldName];
+                }
             });
-            return selectedItem;
+            return newRenderField;
+        });
+    }
+    filterDistinctFields(data, distinctFields) {
+        return data.filter((item, index, self) => {
+            return distinctFields.some(field => self.map(x => x[field]).indexOf(item[field]) === index);
+        });
+    }
+    filterByField(data, fieldInfo, filterValue) {
+        return data.filter(item => {
+            const fieldValue = item[fieldInfo.name];
+
+            if (filterValue.startsWith('*') && filterValue.endsWith('*')) {
+                const search = filterValue.substring(1, filterValue.length - 1);
+                return fieldValue.includes(search);
+            } else if (filterValue.startsWith('*')) {
+                const search = filterValue.substring(1);
+                return fieldValue.endsWith(search);
+            } else if (filterValue.endsWith('*')) {
+                const search = filterValue.substring(0, filterValue.length - 1);
+                return fieldValue.startsWith(search);
+            } else {
+                return fieldValue === filterValue;
+            }
         });
     }
 
-    valueMatch(value, searchValue) {
-        try {
-            let exp = '^' + searchValue.toLowerCase().replace(/\*/g, '.*') + '$';
-            return new RegExp(exp).test(value.toString().toLowerCase());
-        } catch (error) {
-            console.log(error);
-            return false;
+    getFieldInfo(fieldName) {
+        return  this.model.fields.find(field => field.name === fieldName);
+    }
+
+    sortData(data, fieldInfo, sortOrder) {
+        if (sortOrder === 'desc') {
+            return data.sort((a, b) => b[fieldInfo.name].localeCompare(a[fieldInfo.name]));
+        } else {
+            return data.sort((a, b) => a[fieldInfo.name].localeCompare(b[fieldInfo.name]));
         }
     }
-    compareNum(x, y) {
-        if (x === y) return 0;
-        else if (x < y) return -1; return 1;
-    }
-    innerCompare(x, y) {
-        if ((typeof x) === 'string')
-            return x.localeCompare(y);
-        else return this.compareNum(x, y);
-    }
-
-    get() {
-        this.filterData();
-        this.sortData();
-        this.limitData();
-        this.selectFields();
-        return this.data;
-    }
-
-    
 }
+
+export { CollectionFilter };
