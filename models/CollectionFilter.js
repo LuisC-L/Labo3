@@ -15,26 +15,25 @@ class CollectionFilter {
         let fieldInfo;
 
         if (this.params.sort) {
-            let sortParams = this.params.sort.split(',');
+            let sortParams = this.params.sort.split(",");
             let sortField = sortParams[0];
             let sortOrder = sortParams[1];
             fieldInfo = this.getFieldInfo(sortField);
-            if(sortField === "Category")
-                sortOrder = "desc";
+            if (sortField === "Category") sortOrder = "desc";
             if (fieldInfo)
                 filteredData = this.sortData(filteredData, fieldInfo, sortOrder);
         }
 
         if (this.params.fields) {
-            const fieldsToInclude = this.params.fields.split(',');
+            const fieldsToInclude = this.params.fields.split(",");
             filteredData = this.filterFields(filteredData, fieldsToInclude);
         }
         if (this.params.field) {
-            const fieldsToInclude = this.params.field.split(',');
+            const fieldsToInclude = this.params.field.split(",");
 
             filteredData = this.filterFields(filteredData, fieldsToInclude);
 
-            const distinctFields = this.params.field.split(',');
+            const distinctFields = this.params.field.split(",");
             filteredData = this.filterDistinctFields(filteredData, distinctFields);
         }
 
@@ -43,7 +42,11 @@ class CollectionFilter {
                 const fieldInfo = this.getFieldInfo(filter);
 
                 if (fieldInfo)
-                    filteredData = this.filterByField(filteredData, fieldInfo, this.params[filter]);
+                    filteredData = this.filterByField(
+                        filteredData,
+                        fieldInfo,
+                        this.params[filter]
+                    );
             }
         }
         // Apply pagination (limit and offset)
@@ -57,9 +60,9 @@ class CollectionFilter {
     }
 
     filterFields(data, fieldsToInclude) {
-        return data.map(item => {
+        return data.map((item) => {
             const newRenderField = {};
-            fieldsToInclude.forEach(fieldName => {
+            fieldsToInclude.forEach((fieldName) => {
                 if (item[fieldName] !== undefined) {
                     newRenderField[fieldName] = item[fieldName];
                 }
@@ -69,20 +72,22 @@ class CollectionFilter {
     }
     filterDistinctFields(data, distinctFields) {
         return data.filter((item, index, self) => {
-            return distinctFields.some(field => self.map(x => x[field]).indexOf(item[field]) === index);
+            return distinctFields.some(
+                (field) => self.map((x) => x[field]).indexOf(item[field]) === index
+            );
         });
     }
     filterByField(data, fieldInfo, filterValue) {
-        return data.filter(item => {
+        return data.filter((item) => {
             const fieldValue = item[fieldInfo.name];
 
-            if (filterValue.startsWith('*') && filterValue.endsWith('*')) {
+            if (filterValue.startsWith("*") && filterValue.endsWith("*")) {
                 const search = filterValue.substring(1, filterValue.length - 1);
                 return fieldValue.includes(search);
-            } else if (filterValue.startsWith('*')) {
+            } else if (filterValue.startsWith("*")) {
                 const search = filterValue.substring(1);
                 return fieldValue.endsWith(search);
-            } else if (filterValue.endsWith('*')) {
+            } else if (filterValue.endsWith("*")) {
                 const search = filterValue.substring(0, filterValue.length - 1);
                 return fieldValue.startsWith(search);
             } else {
@@ -92,14 +97,18 @@ class CollectionFilter {
     }
 
     getFieldInfo(fieldName) {
-        return  this.model.fields.find(field => field.name === fieldName);
+        return this.model.fields.find((field) => field.name === fieldName);
     }
 
     sortData(data, fieldInfo, sortOrder) {
-        if (sortOrder === 'desc') {
-            return data.sort((a, b) => b[fieldInfo.name].localeCompare(a[fieldInfo.name]));
+        if (sortOrder === "desc") {
+            return data.sort((a, b) =>
+                b[fieldInfo.name].localeCompare(a[fieldInfo.name])
+            );
         } else {
-            return data.sort((a, b) => a[fieldInfo.name].localeCompare(b[fieldInfo.name]));
+            return data.sort((a, b) =>
+                a[fieldInfo.name].localeCompare(b[fieldInfo.name])
+            );
         }
     }
 }
